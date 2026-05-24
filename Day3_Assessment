@@ -1,0 +1,229 @@
+Case Study 1: Online Shopping Order System
+
+SCENARIO 1: Mobile Product Revenue Report
+Scenario
+The company wants a report of Mobile product orders with these conditions:
+
+db.orders.aggregate([
+  {$match: {product: "Mobile", price: {$gte: 15000}}},
+  {$group: {
+            _id:0,
+            totalCustomer: {$sum: 1}, 
+            totalRevenue: {$sum: "$price"},
+            totalAverage: {$avg: "$price"},
+            totalMinimum: {$min: "$price"},
+            totalMaximum: {$max: "$price"},
+            customerNames: {$push: "$name"},
+            firstCustomer: {$first: "$name"}
+            }},
+  {$project: {
+    _id:0,
+    totalCustomer: 1,
+    totalRevenue: 1,
+    totalAverage: 1,
+    totalMinimum: 1,
+    totalMaximum: 1,
+    customerNames: 1,
+    firstCustomer: 1
+  }},
+  {$out: "mobile_report"}
+])
+
+SCENARIO 2: High Value Products Report
+Scenario
+The management wants a report of products where:
+
+db.orders.aggregate([
+  {$match: {product: {$in: ["Mobile","Laptop"]}, price: {$gte: 15000}}},
+  {$group: {
+            _id: "$product",
+            totalorders: {$sum: 1}, 
+            totalRevenue: {$sum: "$price"},
+            totalAverage: {$avg: "$price"},
+            totalMinimum: {$min: "$price"},
+            totalMaximum: {$max: "$price"},
+            customerNames: {$push: "$customerName"}
+            }},
+  {$project: {
+    product: "$_id",
+    totalOrders: 1,
+    totalRevenue: 1,
+    totalAverage: 1,
+    totalMinimum: 1,
+    totalMaximum: 1,
+    customerNames: 1,
+    _id:0
+  }},
+  {$out: "high_value_products_report"}
+])
+db.high_value_products_report.find()
+
+SCENARIO 3: Customer-wise Spending Report
+Scenario
+The company wants a report of customers who:
+
+db.orders.aggregate([
+  {$group: {
+            _id: "$customer",
+            totalproductsPurchased: {$sum: 1}, 
+            totalAmountSpent: {$sum: "$price"},
+            totalAverage: {$avg: "$price"},
+            totalMinimum: {$min: "$price"},
+            totalMaximum: {$max: "$price"},
+            customerNames: {$push: "$customerName"}
+            }},
+  {$match: {totalproductsPurchased: {$gt: 1},
+           totalAmoountSpent: {$gte: 30000}}},
+  {$project: {
+    customerNames: "$_id",
+    totalAmountSpent: 1,
+    totalAverage: 1,
+    totalMinimum: 1,
+    totalMaximum: 1,
+    totalproductsPurchased: 1,
+    _id:0
+  }},
+  {$out: "high_value_products_report"}
+])
+db.high_value_products_report.find()
+
+
+Case Study 2 : Movie Ticket Booking System
+
+Query 1: Total bookings per movie
+
+db.bookings.aggregate([
+  {
+    $lookup: {
+      from: "movies",
+      localField: "movie_id",
+      foreignField: "_id",
+      as: "movieDetails"
+    }
+  },
+  {$unwind: "$movieDetails"},
+  {$group: {_id:"$movieDetails.title", totalBookings: {$sum: 1}}},
+  {$project: {_id: 0, title:"$_id", totalBookings: 1}}
+])
+
+Query 2: Movie-wise revenue report
+
+db.bookings.aggregate([
+  {
+    $lookup: {
+      from: "movies",
+      localField: "movie_id",
+      foreignField: "_id",
+      as: "movieDetails"
+    }
+  },
+  {$unwind: "$movieDetails"},
+  {$group: {_id:"$movieDetails.title", 
+           totalTicketsSold: { $sum: 1 },
+           totalRevenue: { $sum: "$price" },
+           averagePrice: { $avg: "$price" },
+           minimumPrice: { $min: "$price" },
+           maximumPrice: { $max: "$price" }}},
+  {$project: {_id: 0, title:"$_id", totalTicketsSold: 1,
+             totalRevenue: 1, averagePrice: 1, minimumPrice: 1, 
+             maximumPrice: 1}}
+])
+
+Query 3: Customer-wise spending report
+
+db.bookings.aggregate([
+  {
+    $lookup: {
+      from: "customers",
+      localField: "customer_id",
+      foreignField: "_id",
+      as: "customerDetails"
+    }
+  },
+  {
+    $lookup: {
+      from: "movies",
+      localField: "movie_id",
+      foreignField: "_id",
+      as: "movieDetails"
+    }
+  },
+  {$unwind: "$customerDetails"},
+  {$unwind: "$movieDetails"},
+  {$group: {_id:"$customerDetails.name", 
+           numberofMoviesBooked: { $sum: 1 },
+           totalAmountSpent: { $sum: "$price" },
+           averageSpending: { $avg: "$price" },
+           moviesWatched: {$push: "$moviesDetails.title"}}},
+  {$project: {_id: 0, name:"$_id", numberofMoviesBooked: 1,
+             totalAmountSpent: 1, averagePricespending: 1, moviesWatched: 1}}
+])
+
+Query 4: Customers with multiple bookings
+
+db.bookings.aggregate([
+  {
+    $lookup: {
+      from: "customers",
+      localField: "customer_id",
+      foreignField: "_id",
+      as: "customerDetails"
+    }
+  },
+  {
+    $lookup: {
+      from: "movies",
+      localField: "movie_id",
+      foreignField: "_id",
+      as: "movieDetails"
+    }
+  },
+  {$unwind: "$customerDetails"},
+  {$unwind: "$movieDetails"},
+  {$group: {_id:"$customerDetails.name", totalMoviesBooked: { $sum: 1 }}},
+  {$match: {
+      totalMoviesBooked: { $gt: 1 }
+  }},
+  {$project: {_id: 0, name:"$_id", totalMoviesBooked: 1}}
+])
+
+Query 5: Genre-wise booking count
+
+db.bookings.aggregate([
+  {
+    $lookup: {
+      from: "movies",
+      localField: "movie_id",
+      foreignField: "_id",
+      as: "movieDetails"
+    }
+  },
+  {$unwind: "$movieDetails"},
+  {$group: {_id:"$movieDetails.genre", totalBookings: { $sum: 1 }}},
+  {$project: {_id: 0, genre:"$_id", totalBookings: 1}}
+])
+
+Query 6: Movie popularity with customer list
+
+db.bookings.aggregate([
+  {
+    $lookup: {
+      from: "customers",
+      localField: "customer_id",
+      foreignField: "_id",
+      as: "customerDetails"
+    }
+  },
+  {
+    $lookup: {
+      from: "movies",
+      localField: "movie_id",
+      foreignField: "_id",
+      as: "movieDetails"
+    }
+  },
+  {$unwind: "$customerDetails"},
+  {$unwind: "$movieDetails"},
+  {$group: {_id:"$movieDetails.title", totalBookings: { $sum: 1 }, customersList: { $push: "$customerDetails.name" }}},
+  {$project: {_id: 0, title:"$_id", totalBookings: 1, customersList: 1}}
+])
