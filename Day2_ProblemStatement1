@@ -1,0 +1,455 @@
+CASE STUDY : ONLINE ORDERS MANAGEMENT SYSTEM
+
+Aggregate Functions:
+
+1. Find Minimum Order Amount
+
+db.orders.aggregate([
+{
+ $group:{
+  _id:null,
+  minAmount:{$min:"$totalAmount"}
+ }
+}
+])
+
+
+
+2. Find Maximum Order Amount
+
+db.orders.aggregate([
+{
+ $group:{
+  _id:null,
+  maxAmount:{$max:"$totalAmount"}
+ }
+}
+])
+
+
+
+3. Find Average Order Amount
+
+db.orders.aggregate([
+{
+ $group:{
+  _id:null,
+  avgAmount:{$avg:"$totalAmount"}
+ }
+}
+])
+
+
+
+4. Find Total Number of Orders
+
+db.orders.aggregate([
+{
+ $group:{
+  _id:null,
+  totalOrders:{$sum:1}
+ }
+}
+])
+
+
+
+5. Find Total Revenue
+
+db.orders.aggregate([
+{
+ $group:{
+  _id:null,
+  totalRevenue:{$sum:"$totalAmount"}
+ }
+}
+])
+
+Aggregation Pipeline Stages:
+
+6. Filter Orders Greater Than 10000
+
+db.orders.aggregate([
+{
+ $match:{
+  totalAmount:{$gt:10000}
+ }
+}
+])
+
+
+
+7. Show Only Customer Name and Amount
+
+db.orders.aggregate([
+{
+ $project:{
+  customerName:1,
+  totalAmount:1,
+  _id:0
+ }
+}
+])
+
+
+
+8. Limit Results
+
+db.orders.aggregate([
+{
+ $limit:5
+ }
+])
+
+
+
+9. Skip First 3 Orders
+
+db.orders.aggregate([
+{
+ $skip:3
+ }
+])
+
+
+
+10. Sort by Total Amount Descending
+
+db.orders.aggregate([
+{
+ $sort:{
+  totalAmount:-1
+ }
+}
+])
+
+
+
+11. Group by Category with Revenue Details
+
+db.orders.aggregate([
+{
+ $group:{
+  _id:"$category",
+  totalRevenue:{$sum:"$totalAmount"},
+  avgAmount:{$avg:"$totalAmount"},
+  maxAmount:{$max:"$totalAmount"},
+  minAmount:{$min:"$totalAmount"},
+  count:{$sum:1}
+ }
+}
+])
+
+Using $limit and $skip in MongoDB Aggregate:
+
+12. Skip and Limit (Pagination)
+
+db.orders.aggregate([
+{
+ $skip:5
+},
+{
+ $limit:5
+}
+])
+
+
+
+13. Sorting with Pagination
+
+db.orders.aggregate([
+{
+ $sort:{
+  totalAmount:-1
+ }
+},
+{
+ $skip:2
+},
+{
+ $limit:3
+}
+])
+
+
+
+14. Total Revenue by Category for Orders Above 10000
+
+db.orders.aggregate([
+{
+ $match:{
+  totalAmount:{$gt:10000}
+ }
+},
+{
+ $group:{
+  _id:"$category",
+  totalRevenue:{$sum:"$totalAmount"}
+ }
+},
+{
+ $project:{
+  category:"$_id",
+  totalRevenue:1,
+  _id:0
+ }
+},
+{
+ $sort:{
+  totalRevenue:-1
+ }
+}
+])
+
+
+
+15. Top 3 Products with Highest Average Amount
+
+db.orders.aggregate([
+{
+ $group:{
+  _id:"$product",
+  avgAmount:{$avg:"$totalAmount"}
+ }
+},
+{
+ $project:{
+  product:"$_id",
+  avgAmount:1,
+  _id:0
+ }
+},
+{
+ $sort:{
+  avgAmount:-1
+ }
+},
+{
+ $limit:3
+}
+])
+
+
+
+16. Display 3 Customers After Skipping First 2
+
+db.orders.aggregate([
+{
+ $project:{
+  customerName:1,
+  totalAmount:1,
+  _id:0
+ }
+},
+{
+ $sort:{
+  totalAmount:-1
+ }
+},
+{
+ $skip:2
+},
+{
+ $limit:3
+}
+])
+
+
+
+17. Count Orders Per Category where Quantity > 2
+
+db.orders.aggregate([
+{
+ $match:{
+  quantity:{$gt:2}
+ }
+},
+{
+ $group:{
+  _id:"$category",
+  count:{$sum:1}
+ }
+},
+{
+ $match:{
+  count:{$gt:1}
+ }
+},
+{
+ $sort:{
+  count:1
+ }
+}
+])
+
+
+
+18. Total Quantity Sold Per Category
+
+db.orders.aggregate([
+{
+ $group:{
+  _id:"$category",
+  totalQty:{$sum:"$quantity"}
+ }
+},
+{
+ $sort:{
+  totalQty:-1
+ }
+},
+{
+ $skip:1
+},
+{
+ $limit:2
+}
+])
+
+
+
+19. High Spending Customers
+
+db.orders.aggregate([
+{
+ $match:{
+  totalAmount:{$gt:5000}
+ }
+},
+{
+ $group:{
+  _id:"$customerName",
+  totalSpent:{$sum:"$totalAmount"}
+ }
+},
+{
+ $project:{
+  customerName:"$_id",
+  totalSpent:1,
+  _id:0
+ }
+},
+{
+ $sort:{
+  totalSpent:-1
+ }
+},
+{
+ $skip:1
+},
+{
+ $limit:2
+}
+])
+
+
+
+20. Category Revenue Greater Than 20000
+
+db.orders.aggregate([
+{
+ $match:{
+  price:{$gt:1000}
+ }
+},
+{
+ $group:{
+  _id:"$category",
+  totalRevenue:{$sum:"$totalAmount"}
+ }
+},
+{
+ $match:{
+  totalRevenue:{$gt:20000}
+ }
+},
+{
+ $project:{
+  category:"$_id",
+  totalRevenue:1,
+  _id:0
+ }
+},
+{
+ $sort:{
+  totalRevenue:-1
+ }
+},
+{
+ $limit:3
+}
+])
+
+
+
+21. Top Selling Products by Quantity
+
+db.orders.aggregate([
+{
+ $match:{
+  quantity:{$gt:1}
+ }
+},
+{
+ $group:{
+  _id:"$product",
+  totalQty:{$sum:"$quantity"}
+ }
+},
+{
+ $project:{
+  product:"$_id",
+  totalQty:1,
+  _id:0
+ }
+},
+{
+ $sort:{
+  totalQty:-1
+ }
+},
+{
+ $skip:1
+},
+{
+ $limit:3
+}
+])
+
+
+
+22. Low Revenue Categories
+
+db.orders.aggregate([
+{
+ $match:{
+  totalAmount:{$gt:1000}
+ }
+},
+{
+ $group:{
+  _id:"$category",
+  totalRevenue:{$sum:"$totalAmount"}
+ }
+},
+{
+ $match:{
+  totalRevenue:{$gt:5000}
+ }
+},
+{
+ $project:{
+  category:"$_id",
+  totalRevenue:1,
+  _id:0
+ }
+},
+{
+ $sort:{
+  totalRevenue:1
+ }
+},
+{
+ $limit:2
+}
+])
